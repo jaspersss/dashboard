@@ -39,15 +39,19 @@
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
 
+        /* --- De Compacte Klikbare Datum Balk --- */
         .date-bar {
-            background-color: white; padding: 15px; text-align: center;
+            background-color: white; padding: 10px 15px; text-align: center;
             font-size: 1.3em; font-weight: bold; color: var(--buitenzorg-green);
-            border-bottom: 1px solid #eee;
+            border-bottom: 1px solid #eee; cursor: pointer;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            transition: background-color 0.2s;
         }
+        .date-bar:active { background-color: #f0f0f0; }
 
         .staff-bar {
-            background-color: #f8f9fa; padding: 10px 15px; text-align: center;
-            font-size: 1em; color: var(--wood-brown);
+            background-color: #f8f9fa; padding: 8px 15px; text-align: center;
+            font-size: 0.95em; color: var(--wood-brown);
             border-bottom: 2px solid #eee; margin-bottom: 15px;
         }
 
@@ -98,13 +102,52 @@
             background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);
         }
         .empty-state { border-left: 5px solid #bdc3c7; }
+
+        /* --- Modal & Kalender Pop-up --- */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.6); display: none; justify-content: center; align-items: center;
+            z-index: 2000; backdrop-filter: blur(2px);
+        }
+        .calendar-modal {
+            background: white; border-radius: 16px; padding: 20px; width: 90%; max-width: 360px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+        }
+        .cal-header {
+            display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;
+        }
+        .cal-header h2 { margin: 0; color: var(--wood-brown); font-size: 1.3em; }
+        .cal-nav-btn {
+            background: #f1f5f1; border: none; color: var(--buitenzorg-green); font-size: 1.2em;
+            width: 36px; height: 36px; border-radius: 50%; cursor: pointer; font-weight: bold;
+        }
+        .cal-nav-btn:active { background: #e0e8e0; }
+        
+        .cal-grid-header {
+            display: grid; grid-template-columns: repeat(7, 1fr); text-align: center;
+            font-weight: bold; color: #888; font-size: 0.85em; margin-bottom: 10px;
+        }
+        .cal-grid {
+            display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px;
+        }
+        .cal-day {
+            aspect-ratio: 1; display: flex; justify-content: center; align-items: center;
+            border-radius: 50%; font-weight: bold; color: #333; cursor: pointer; font-size: 1em;
+        }
+        .cal-day:active { background: #f0f0f0; }
+        .cal-day.empty { background: none; cursor: default; }
+        .cal-day.selected { background: var(--buitenzorg-green); color: white; box-shadow: 0 2px 6px rgba(45,90,39,0.4); }
+        .cal-day.is-today:not(.selected) { border: 2px solid var(--buitenzorg-green); color: var(--buitenzorg-green); }
     </style>
 </head>
 <body>
 
     <div class="app-header">🏕️ Terrein App</div>
 
-    <div class="date-bar" id="dateDisplay">Datum laden...</div>
+    <div class="date-bar" id="dateDisplay" onclick="openCalendar()">
+        Datum laden...
+    </div>
+    
     <div class="staff-bar" id="staffDisplay">Staf laden...</div>
 
     <div class="content" id="contentArea">
@@ -115,6 +158,20 @@
         <button class="nav-btn" onclick="changeDate(-1)">◀ Vorige</button>
         <button class="nav-btn today" onclick="goToToday()">Vandaag</button>
         <button class="nav-btn" onclick="changeDate(1)">Volg. ▶</button>
+    </div>
+
+    <div class="modal-overlay" id="calendarModal" onclick="closeCalendarModal(event)">
+        <div class="calendar-modal" onclick="event.stopPropagation()">
+            <div class="cal-header">
+                <button class="cal-nav-btn" onclick="changeCalMonth(-1)">◀</button>
+                <h2 id="calMonthDisplay">Maand Jaar</h2>
+                <button class="cal-nav-btn" onclick="changeCalMonth(1)">▶</button>
+            </div>
+            <div class="cal-grid-header">
+                <div>Ma</div><div>Di</div><div>Wo</div><div>Do</div><div>Vr</div><div>Za</div><div>Zo</div>
+            </div>
+            <div class="cal-grid" id="calGrid"></div>
+        </div>
     </div>
 
 <script>
@@ -131,8 +188,8 @@
     let allStaff = [];
     let currentDate = new Date();
     currentDate.setHours(0,0,0,0);
+    let calViewDate = new Date();
 
-    // --- SLIMME RELATIEVE DATUMS ---
     function formatRelativeDate(dateObj, hasTime, capitalizeFirst = true) {
         let today = new Date();
         today.setHours(0,0,0,0);
@@ -142,23 +199,23 @@
         let diffDays = Math.round((target - today) / (1000 * 60 * 60 * 24));
         let dateStr = "";
         
-        if (diffDays === 0) dateStr = "vandaag";
-        else if (diffDays === 1) dateStr = "morgen";
-        else if (diffDays === 2) dateStr = "overmorgen";
-        else if (diffDays === -1) dateStr = "gisteren";
-        else if (diffDays === -2) dateStr = "eergisteren";
+        if (diffDays === 0) dateStr = "Vandaag";
+        else if (diffDays === 1) dateStr = "Morgen";
+        else if (diffDays === 2) dateStr = "Overmorgen";
+        else if (diffDays === -1) dateStr = "Gisteren";
+        else if (diffDays === -2) dateStr = "Eergisteren";
         else if (diffDays > 2 && diffDays <= 6) {
-            dateStr = "aankomende " + dateObj.toLocaleDateString('nl-NL', {weekday: 'long'});
+            dateStr = "Aankomende " + dateObj.toLocaleDateString('nl-NL', {weekday: 'long'});
         }
         else if (diffDays < -2 && diffDays >= -6) {
-            dateStr = "afgelopen " + dateObj.toLocaleDateString('nl-NL', {weekday: 'long'});
+            dateStr = "Afgelopen " + dateObj.toLocaleDateString('nl-NL', {weekday: 'long'});
         }
         else {
             dateStr = dateObj.toLocaleDateString('nl-NL', { day: '2-digit', month: '2-digit', year: 'numeric' });
         }
         
-        if (capitalizeFirst && dateStr.length > 0) {
-            dateStr = dateStr.charAt(0).toUpperCase() + dateStr.slice(1);
+        if (!capitalizeFirst) {
+            dateStr = dateStr.toLowerCase();
         }
         
         if (hasTime) {
@@ -168,7 +225,57 @@
         return dateStr;
     }
 
-    // --- PROXY RACER ---
+    function openCalendar() {
+        calViewDate = new Date(currentDate); 
+        renderCalendarGrid();
+        document.getElementById('calendarModal').style.display = 'flex';
+    }
+
+    function closeCalendarModal(e) {
+        if (e.target === document.getElementById('calendarModal')) {
+            document.getElementById('calendarModal').style.display = 'none';
+        }
+    }
+
+    function changeCalMonth(offset) {
+        calViewDate.setMonth(calViewDate.getMonth() + offset);
+        renderCalendarGrid();
+    }
+
+    function selectDateFromCalendar(y, m, d) {
+        currentDate = new Date(y, m, d, 0, 0, 0);
+        document.getElementById('calendarModal').style.display = 'none';
+        renderView(); 
+    }
+
+    function renderCalendarGrid() {
+        const year = calViewDate.getFullYear();
+        const month = calViewDate.getMonth();
+        const monthNames = ["Januari", "Februari", "Maart", "April", "Mei", "Juni", "Juli", "Augustus", "September", "Oktober", "November", "December"];
+        
+        document.getElementById('calMonthDisplay').textContent = `${monthNames[month]} ${year}`;
+
+        let firstDay = new Date(year, month, 1).getDay();
+        let daysInMonth = new Date(year, month + 1, 0).getDate();
+        firstDay = firstDay === 0 ? 7 : firstDay;
+
+        let html = '';
+        for (let i = 1; i < firstDay; i++) { html += `<div class="cal-day empty"></div>`; }
+        
+        let today = new Date();
+        for (let i = 1; i <= daysInMonth; i++) {
+            let isSelected = (year === currentDate.getFullYear() && month === currentDate.getMonth() && i === currentDate.getDate());
+            let isToday = (year === today.getFullYear() && month === today.getMonth() && i === today.getDate());
+            
+            let classes = "cal-day";
+            if (isSelected) classes += " selected";
+            if (isToday) classes += " is-today";
+
+            html += `<div class="${classes}" onclick="selectDateFromCalendar(${year}, ${month}, ${i})">${i}</div>`;
+        }
+        document.getElementById('calGrid').innerHTML = html;
+    }
+
     async function fetchFastest(url) {
         try {
             const promises = proxies.map(async (proxy) => {
@@ -208,7 +315,6 @@
         return cachedData || '';
     }
 
-    // --- ICS PARSERS ---
     function parseICSDate(str) {
         if (!str) return null;
         const numbers = str.replace(/[^0-9]/g, '');
@@ -226,9 +332,7 @@
         
         for (let i = 0; i < lines.length; i++) {
             let line = lines[i];
-            while (i + 1 < lines.length && (lines[i+1].startsWith(' ') || lines[i+1].startsWith('\t'))) {
-                i++; line += lines[i].substring(1);
-            }
+            while (i + 1 < lines.length && (lines[i+1].startsWith(' ') || lines[i+1].startsWith('\t'))) { i++; line += lines[i].substring(1); }
             if (line.startsWith('BEGIN:VEVENT')) currentEvent = {};
             else if (line.startsWith('END:VEVENT') && currentEvent) {
                 if (currentEvent.startRaw) {
@@ -303,7 +407,6 @@
         return result;
     }
 
-    // --- NAVIGATIE ACTIES ---
     function changeDate(daysOffset) {
         currentDate.setDate(currentDate.getDate() + daysOffset);
         renderView();
@@ -315,23 +418,28 @@
         renderView();
     }
 
-    // --- SCHERM OPBOUWEN ---
     function renderView() {
         let endOfDay = new Date(currentDate);
         endOfDay.setHours(23, 59, 59, 999);
 
-        // 1. Datum Bar Tekenen
+        // 1. Datum Bar Tekenen (Heel Compact)
         let dateHeader = formatRelativeDate(currentDate, false, true);
-        
-        // Als het NIET vandaag is, tonen we de exacte datum in het klein eronder voor de zekerheid
         let realToday = new Date();
+        let exactDate = currentDate.toLocaleDateString('nl-NL', { day: 'numeric', month: 'long', year: 'numeric' });
+        
+        let displayHtml = `<div style="display: flex; align-items: center; justify-content: center; gap: 8px;">
+                              <span>${dateHeader}</span>
+                              <span style="font-size: 0.85em; opacity: 0.8;">📅</span>
+                           </div>`;
+
+        // Alleen de extra sub-datum tonen als het niet 'vandaag' is
         if (currentDate.getDate() !== realToday.getDate() || currentDate.getMonth() !== realToday.getMonth() || currentDate.getFullYear() !== realToday.getFullYear()) {
-            let exactDate = currentDate.toLocaleDateString('nl-NL', { day: 'numeric', month: 'long', year: 'numeric' });
             if (dateHeader.toLowerCase() !== exactDate.toLowerCase()) {
-                dateHeader += `<br><span style="font-size:0.7em; font-weight:normal; color:#888;">${exactDate}</span>`;
+                displayHtml += `<div style="font-size:0.7em; font-weight:normal; color:#888; margin-top: 2px;">${exactDate}</div>`;
             }
         }
-        document.getElementById('dateDisplay').innerHTML = `📅 ${dateHeader}`;
+        
+        document.getElementById('dateDisplay').innerHTML = displayHtml;
 
         // 2. Staf Bar Tekenen
         let todaysStaff = allStaff.filter(e => e.start <= endOfDay && e.end >= currentDate);
@@ -381,14 +489,12 @@
         window.scrollTo(0, 0); 
     }
 
-    // --- START APPLICATIE ---
     Promise.all([
         fetchCachedICS(reservationUrl, 'buitenzorg_res_mobile'),
         fetchCachedICS(planningUrl, 'buitenzorg_plan_mobile')
     ]).then(([resData, planData]) => {
         if (!resData || !planData) throw new Error("Netwerk fout");
         
-        // Parse Reserveringen
         let rEvents = parseICS(resData);
         rEvents.forEach(e => {
             let details = extractDetails(e.description, e.location);
@@ -399,7 +505,6 @@
             allReservations.push(e);
         });
 
-        // Parse Stafplanning
         let pEvents = parseICS(planData);
         pEvents.forEach(e => {
             let s = e.summary ? e.summary.toLowerCase() : '';
