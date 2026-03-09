@@ -39,6 +39,17 @@
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
 
+        /* --- De Ververs Knop Rechtsboven --- */
+        .header-refresh-btn {
+            position: absolute; right: 15px; background: none; border: none;
+            color: white; padding: 5px; display: flex; align-items: center;
+            justify-content: center; cursor: pointer; outline: none;
+            transition: opacity 0.3s ease;
+        }
+        .header-refresh-btn:active { opacity: 0.7; }
+        .spinning { animation: spin 1s linear infinite; }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+
         /* --- De Compacte Klikbare Datum Balk --- */
         .date-bar {
             background-color: white; padding: 10px 15px; text-align: center;
@@ -142,7 +153,15 @@
 </head>
 <body>
 
-    <div class="app-header">🏕️ Terrein App</div>
+    <div class="app-header">
+        🏕️ Terrein App
+        <button id="refreshBtn" class="header-refresh-btn" onclick="refreshReservations()" title="Vernieuw Reserveringen">
+            <svg viewBox="0 0 24 24" width="22" height="22" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="23 4 23 10 17 10"></polyline>
+                <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+            </svg>
+        </button>
+    </div>
 
     <div class="date-bar" id="dateDisplay" onclick="openCalendar()">
         Datum laden...
@@ -422,7 +441,7 @@
         let endOfDay = new Date(currentDate);
         endOfDay.setHours(23, 59, 59, 999);
 
-        // 1. Datum Bar Tekenen (Heel Compact)
+        // 1. Datum Bar Tekenen
         let dateHeader = formatRelativeDate(currentDate, false, true);
         let realToday = new Date();
         let exactDate = currentDate.toLocaleDateString('nl-NL', { day: 'numeric', month: 'long', year: 'numeric' });
@@ -432,7 +451,6 @@
                               <span style="font-size: 0.85em; opacity: 0.8;">📅</span>
                            </div>`;
 
-        // Alleen de extra sub-datum tonen als het niet 'vandaag' is
         if (currentDate.getDate() !== realToday.getDate() || currentDate.getMonth() !== realToday.getMonth() || currentDate.getFullYear() !== realToday.getFullYear()) {
             if (dateHeader.toLowerCase() !== exactDate.toLowerCase()) {
                 displayHtml += `<div style="font-size:0.7em; font-weight:normal; color:#888; margin-top: 2px;">${exactDate}</div>`;
@@ -489,6 +507,49 @@
         window.scrollTo(0, 0); 
     }
 
+    // --- NIEUW: HANDMATIG RESERVERINGEN VERNIEUWEN (MET PAUZE) ---
+    async function refreshReservations() {
+        const btn = document.getElementById('refreshBtn');
+        
+        // Als de knop al aan het draaien is, doe niks (voorkomt dubbel klikken)
+        if (btn.classList.contains('spinning')) return;
+        
+        btn.classList.add('spinning');
+        // Maak de knop visueel een beetje doorzichtig tijdens het laden
+        btn.style.opacity = "0.5";
+        
+        // Gooi specifiek de oude reserveringen cache weg
+        localStorage.removeItem('buitenzorg_res_mobile');
+        localStorage.removeItem('buitenzorg_res_mobile_time');
+        
+        try {
+            const resData = await fetchCachedICS(reservationUrl, 'buitenzorg_res_mobile');
+            if (!resData) throw new Error("Netwerk fout");
+            
+            allReservations = [];
+            let rEvents = parseICS(resData);
+            rEvents.forEach(e => {
+                let details = extractDetails(e.description, e.location);
+                e.terrainText = details.terrains.length > 0 ? details.terrains.join('<br>') : '📍 Onbekend Terrein / Gebouw';
+                e.phone = details.phone;
+                e.status = details.status;
+                e.personen = details.personen;
+                allReservations.push(e);
+            });
+            
+            renderView();
+        } catch (e) {
+            console.warn("Kon reserveringen niet vernieuwen:", e);
+        } finally {
+            // Wacht na het succes 2 seconden voordat de knop weer bruikbaar is
+            setTimeout(() => {
+                btn.classList.remove('spinning');
+                btn.style.opacity = "1";
+            }, 2000);
+        }
+    }
+
+    // --- START APPLICATIE ---
     Promise.all([
         fetchCachedICS(reservationUrl, 'buitenzorg_res_mobile'),
         fetchCachedICS(planningUrl, 'buitenzorg_plan_mobile')
