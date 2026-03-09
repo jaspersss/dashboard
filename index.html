@@ -443,19 +443,13 @@
 
         // 1. Datum Bar Tekenen
         let dateHeader = formatRelativeDate(currentDate, false, true);
-        let realToday = new Date();
-        let exactDate = currentDate.toLocaleDateString('nl-NL', { day: 'numeric', month: 'long', year: 'numeric' });
+        let dayOfWeek = currentDate.toLocaleDateString('nl-NL', { weekday: 'long' });
         
         let displayHtml = `<div style="display: flex; align-items: center; justify-content: center; gap: 8px;">
                               <span>${dateHeader}</span>
                               <span style="font-size: 0.85em; opacity: 0.8;">📅</span>
-                           </div>`;
-
-        if (currentDate.getDate() !== realToday.getDate() || currentDate.getMonth() !== realToday.getMonth() || currentDate.getFullYear() !== realToday.getFullYear()) {
-            if (dateHeader.toLowerCase() !== exactDate.toLowerCase()) {
-                displayHtml += `<div style="font-size:0.7em; font-weight:normal; color:#888; margin-top: 2px;">${exactDate}</div>`;
-            }
-        }
+                           </div>
+                           <div style="font-size:0.7em; font-weight:normal; color:#888; margin-top: 2px;">${dayOfWeek}</div>`;
         
         document.getElementById('dateDisplay').innerHTML = displayHtml;
 
@@ -507,18 +501,13 @@
         window.scrollTo(0, 0); 
     }
 
-    // --- NIEUW: HANDMATIG RESERVERINGEN VERNIEUWEN (MET PAUZE) ---
     async function refreshReservations() {
         const btn = document.getElementById('refreshBtn');
-        
-        // Als de knop al aan het draaien is, doe niks (voorkomt dubbel klikken)
         if (btn.classList.contains('spinning')) return;
         
         btn.classList.add('spinning');
-        // Maak de knop visueel een beetje doorzichtig tijdens het laden
         btn.style.opacity = "0.5";
         
-        // Gooi specifiek de oude reserveringen cache weg
         localStorage.removeItem('buitenzorg_res_mobile');
         localStorage.removeItem('buitenzorg_res_mobile_time');
         
@@ -541,7 +530,6 @@
         } catch (e) {
             console.warn("Kon reserveringen niet vernieuwen:", e);
         } finally {
-            // Wacht na het succes 2 seconden voordat de knop weer bruikbaar is
             setTimeout(() => {
                 btn.classList.remove('spinning');
                 btn.style.opacity = "1";
@@ -549,7 +537,6 @@
         }
     }
 
-    // --- START APPLICATIE ---
     Promise.all([
         fetchCachedICS(reservationUrl, 'buitenzorg_res_mobile'),
         fetchCachedICS(planningUrl, 'buitenzorg_plan_mobile')
