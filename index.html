@@ -39,7 +39,6 @@
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
 
-        /* --- De Ververs Knop Rechtsboven --- */
         .header-refresh-btn {
             position: absolute; right: 15px; background: none; border: none;
             color: white; padding: 5px; display: flex; align-items: center;
@@ -50,7 +49,6 @@
         .spinning { animation: spin 1s linear infinite; }
         @keyframes spin { 100% { transform: rotate(360deg); } }
 
-        /* --- De Compacte Klikbare Datum Balk --- */
         .date-bar {
             background-color: white; padding: 10px 15px; text-align: center;
             font-size: 1.3em; font-weight: bold; color: var(--buitenzorg-green);
@@ -68,20 +66,58 @@
 
         .content { padding: 0 15px; max-width: 600px; margin: 0 auto; }
 
+        /* --- Nieuwe Accordeon Kaarten --- */
         .res-card {
-            background: white; border-radius: 12px; padding: 15px; margin-bottom: 15px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08); border-left: 5px solid var(--wood-brown);
+            background: white; border-radius: 12px; margin-bottom: 15px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08); 
+            overflow: hidden; transition: all 0.3s ease;
         }
 
-        .res-card h3 {
-            margin: 0 0 10px 0; color: var(--buitenzorg-green); font-size: 1.2em;
-            border-bottom: 1px solid #eee; padding-bottom: 8px; line-height: 1.4;
+        .card-header {
+            padding: 15px; display: flex; justify-content: space-between; align-items: center;
+            cursor: pointer;
+        }
+        
+        .card-header-info { flex-grow: 1; padding-right: 15px; }
+        .card-header-info h3 { margin: 0 0 4px 0; color: #2c3e50; font-size: 1.15em; line-height: 1.3; }
+        .card-header-info p { margin: 0; font-size: 0.95em; color: #555; font-weight: 500;}
+        
+        .chevron { transition: transform 0.3s ease; color: #888; flex-shrink: 0; }
+        .res-card.expanded .chevron { transform: rotate(180deg); color: var(--buitenzorg-green); }
+
+        .card-body {
+            padding: 0 15px 15px 15px; display: none;
+        }
+        .res-card.expanded .card-body { display: block; }
+
+        /* --- Kleuren Status Logica --- */
+        .status-pill {
+            display: inline-block; padding: 4px 10px; border-radius: 12px; font-size: 0.75em; 
+            font-weight: bold; text-transform: uppercase; margin-bottom: 8px; letter-spacing: 0.5px;
         }
 
-        .res-detail {
-            margin: 6px 0; font-size: 0.95em; display: flex; justify-content: space-between;
-        }
+        /* 🔴 ROOD (Te laat) */
+        .state-red { border-left: 6px solid #e74c3c; }
+        .state-red .card-header { background-color: #fdf2f1; }
+        .state-red .status-pill { background-color: #e74c3c; color: white; }
 
+        /* 🟩 GROEN (Ingecheckt) */
+        .state-green { border-left: 6px solid #2ecc71; }
+        .state-green .card-header { background-color: #f2fcf5; }
+        .state-green .status-pill { background-color: #2ecc71; color: white; }
+
+        /* 🟧 ORANJE (Komt vandaag) */
+        .state-orange { border-left: 6px solid #f39c12; }
+        .state-orange .card-header { background-color: #fef9f1; }
+        .state-orange .status-pill { background-color: #f39c12; color: white; }
+
+        /* ⬜ GRIJS (Gepland / Vertrokken) */
+        .state-default { border-left: 6px solid #bdc3c7; }
+        .state-default .card-header { background-color: #fdfdfd; }
+        .state-default .status-pill { background-color: #bdc3c7; color: white; }
+
+        /* --- Details in het uitklapmenu --- */
+        .res-detail { margin: 8px 0; font-size: 0.95em; display: flex; justify-content: space-between; }
         .res-detail strong { color: #666; min-width: 100px; }
         .res-detail span { text-align: right; font-weight: 500; }
 
@@ -112,9 +148,7 @@
             text-align: center; padding: 40px 20px; color: #777; font-size: 1.1em;
             background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);
         }
-        .empty-state { border-left: 5px solid #bdc3c7; }
 
-        /* --- Modal & Kalender Pop-up --- */
         .modal-overlay {
             position: fixed; top: 0; left: 0; right: 0; bottom: 0;
             background: rgba(0,0,0,0.6); display: none; justify-content: center; align-items: center;
@@ -132,7 +166,6 @@
             background: #f1f5f1; border: none; color: var(--buitenzorg-green); font-size: 1.2em;
             width: 36px; height: 36px; border-radius: 50%; cursor: pointer; font-weight: bold;
         }
-        .cal-nav-btn:active { background: #e0e8e0; }
         
         .cal-grid-header {
             display: grid; grid-template-columns: repeat(7, 1fr); text-align: center;
@@ -145,10 +178,10 @@
             aspect-ratio: 1; display: flex; justify-content: center; align-items: center;
             border-radius: 50%; font-weight: bold; color: #333; cursor: pointer; font-size: 1em;
         }
-        .cal-day:active { background: #f0f0f0; }
-        .cal-day.empty { background: none; cursor: default; }
-        .cal-day.selected { background: var(--buitenzorg-green); color: white; box-shadow: 0 2px 6px rgba(45,90,39,0.4); }
+        .cal-day.selected { background: var(--buitenzorg-green); color: white; }
         .cal-day.is-today:not(.selected) { border: 2px solid var(--buitenzorg-green); color: var(--buitenzorg-green); }
+        .cal-day.empty { visibility: hidden; }
+
     </style>
 </head>
 <body>
@@ -210,33 +243,17 @@
     let calViewDate = new Date();
 
     function formatRelativeDate(dateObj, hasTime, capitalizeFirst = true) {
-        let today = new Date();
-        today.setHours(0,0,0,0);
-        let target = new Date(dateObj);
-        target.setHours(0,0,0,0);
-        
+        let today = new Date(); today.setHours(0,0,0,0);
+        let target = new Date(dateObj); target.setHours(0,0,0,0);
         let diffDays = Math.round((target - today) / (1000 * 60 * 60 * 24));
         let dateStr = "";
         
         if (diffDays === 0) dateStr = "Vandaag";
         else if (diffDays === 1) dateStr = "Morgen";
-        else if (diffDays === 2) dateStr = "Overmorgen";
         else if (diffDays === -1) dateStr = "Gisteren";
-        else if (diffDays === -2) dateStr = "Eergisteren";
-        else if (diffDays > 2 && diffDays <= 6) {
-            dateStr = "Aankomende " + dateObj.toLocaleDateString('nl-NL', {weekday: 'long'});
-        }
-        else if (diffDays < -2 && diffDays >= -6) {
-            dateStr = "Afgelopen " + dateObj.toLocaleDateString('nl-NL', {weekday: 'long'});
-        }
-        else {
-            dateStr = dateObj.toLocaleDateString('nl-NL', { day: '2-digit', month: '2-digit', year: 'numeric' });
-        }
+        else dateStr = dateObj.toLocaleDateString('nl-NL', { day: '2-digit', month: '2-digit', year: 'numeric' });
         
-        if (!capitalizeFirst) {
-            dateStr = dateStr.toLowerCase();
-        }
-        
+        if (!capitalizeFirst) dateStr = dateStr.toLowerCase();
         if (hasTime) {
             let timeStr = dateObj.toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' });
             return `${dateStr} om ${timeStr}`;
@@ -251,9 +268,7 @@
     }
 
     function closeCalendarModal(e) {
-        if (e.target === document.getElementById('calendarModal')) {
-            document.getElementById('calendarModal').style.display = 'none';
-        }
+        if (e.target === document.getElementById('calendarModal')) document.getElementById('calendarModal').style.display = 'none';
     }
 
     function changeCalMonth(offset) {
@@ -271,25 +286,17 @@
         const year = calViewDate.getFullYear();
         const month = calViewDate.getMonth();
         const monthNames = ["Januari", "Februari", "Maart", "April", "Mei", "Juni", "Juli", "Augustus", "September", "Oktober", "November", "December"];
-        
         document.getElementById('calMonthDisplay').textContent = `${monthNames[month]} ${year}`;
-
         let firstDay = new Date(year, month, 1).getDay();
-        let daysInMonth = new Date(year, month + 1, 0).getDate();
         firstDay = firstDay === 0 ? 7 : firstDay;
-
+        let daysInMonth = new Date(year, month + 1, 0).getDate();
         let html = '';
-        for (let i = 1; i < firstDay; i++) { html += `<div class="cal-day empty"></div>`; }
-        
+        for (let i = 1; i < firstDay; i++) html += `<div class="cal-day empty"></div>`;
         let today = new Date();
         for (let i = 1; i <= daysInMonth; i++) {
             let isSelected = (year === currentDate.getFullYear() && month === currentDate.getMonth() && i === currentDate.getDate());
             let isToday = (year === today.getFullYear() && month === today.getMonth() && i === today.getDate());
-            
-            let classes = "cal-day";
-            if (isSelected) classes += " selected";
-            if (isToday) classes += " is-today";
-
+            let classes = "cal-day" + (isSelected ? " selected" : "") + (isToday ? " is-today" : "");
             html += `<div class="${classes}" onclick="selectDateFromCalendar(${year}, ${month}, ${i})">${i}</div>`;
         }
         document.getElementById('calGrid').innerHTML = html;
@@ -300,31 +307,20 @@
             const promises = proxies.map(async (proxy) => {
                 const controller = new AbortController();
                 const timeoutId = setTimeout(() => controller.abort(), 8000); 
-                try {
-                    const res = await fetch(proxy + encodeURIComponent(url), { signal: controller.signal });
-                    clearTimeout(timeoutId);
-                    if (!res.ok) throw new Error('Proxy error');
-                    const text = await res.text();
-                    if (!text.includes('BEGIN:VCALENDAR')) throw new Error('Geen ICS');
-                    return text;
-                } catch (err) {
-                    clearTimeout(timeoutId); throw err; 
-                }
+                const res = await fetch(proxy + encodeURIComponent(url), { signal: controller.signal });
+                clearTimeout(timeoutId);
+                const text = await res.text();
+                if (!text.includes('BEGIN:VCALENDAR')) throw new Error();
+                return text;
             });
             return await Promise.any(promises);
-        } catch (e) {
-            console.warn("Alle proxy's faalden."); return null;
-        }
+        } catch (e) { return null; }
     }
 
     async function fetchCachedICS(url, cacheKey) {
         const cachedData = localStorage.getItem(cacheKey);
         const cachedTime = localStorage.getItem(cacheKey + '_time');
-        
-        if (cachedData && cachedTime && (Date.now() - parseInt(cachedTime)) < (5 * 60 * 1000)) {
-            return cachedData; 
-        }
-        
+        if (cachedData && cachedTime && (Date.now() - parseInt(cachedTime)) < (5 * 60 * 1000)) return cachedData; 
         const data = await fetchFastest(url);
         if (data) {
             localStorage.setItem(cacheKey, data);
@@ -340,15 +336,14 @@
         if (numbers.length < 8) return null;
         let y = parseInt(numbers.substring(0, 4)), m = parseInt(numbers.substring(4, 6)) - 1, d = parseInt(numbers.substring(6, 8));
         let hasTime = numbers.length >= 14;
-        let h = hasTime ? parseInt(numbers.substring(8, 10)) : 0, min = hasTime ? parseInt(numbers.substring(10, 12)) : 0, s = hasTime ? parseInt(numbers.substring(12, 14)) : 0;
-        return { date: new Date(y, m, d, h, min, s), hasTime: hasTime };
+        let h = hasTime ? parseInt(numbers.substring(8, 10)) : 0, min = hasTime ? parseInt(numbers.substring(10, 12)) : 0;
+        return { date: new Date(y, m, d, h, min, 0), hasTime: hasTime };
     }
 
     function parseICS(icsData) {
         const events = [];
         let currentEvent = null;
         const lines = icsData.split(/\r\n|\n|\r/);
-        
         for (let i = 0; i < lines.length; i++) {
             let line = lines[i];
             while (i + 1 < lines.length && (lines[i+1].startsWith(' ') || lines[i+1].startsWith('\t'))) { i++; line += lines[i].substring(1); }
@@ -356,22 +351,13 @@
             else if (line.startsWith('END:VEVENT') && currentEvent) {
                 if (currentEvent.startRaw) {
                     currentEvent.start = currentEvent.startRaw.date;
-                    currentEvent.start.setHours(currentEvent.startRaw.hasTime ? currentEvent.start.getHours() : 0, currentEvent.startRaw.hasTime ? currentEvent.start.getMinutes() : 0, 0, 0); 
-                    if (currentEvent.endRaw) {
-                        if (!currentEvent.endRaw.hasTime) {
-                            currentEvent.end = new Date(currentEvent.endRaw.date.getTime() - 1);
-                            currentEvent.end.setHours(23,59,59,999);
-                        } else currentEvent.end = new Date(currentEvent.endRaw.date.getTime());
-                    } else {
-                        currentEvent.end = new Date(currentEvent.start);
-                        currentEvent.end.setHours(23,59,59,999);
-                    }
+                    currentEvent.end = currentEvent.endRaw ? currentEvent.endRaw.date : new Date(currentEvent.start);
                     events.push(currentEvent);
                 }
                 currentEvent = null;
             } else if (currentEvent) {
                 if (line.startsWith('SUMMARY')) currentEvent.summary = line.substring(line.indexOf(':') + 1).replace(/\\,/g, ',');
-                else if (line.startsWith('DESCRIPTION')) currentEvent.description = line.substring(line.indexOf(':') + 1).replace(/\\n/g, '\n').replace(/\\N/g, '\n').replace(/\\,/g, ',');
+                else if (line.startsWith('DESCRIPTION')) currentEvent.description = line.substring(line.indexOf(':') + 1).replace(/\\n/g, '\n').replace(/\\,/g, ',');
                 else if (line.startsWith('LOCATION')) currentEvent.location = line.substring(line.indexOf(':') + 1).replace(/\\,/g, ',');
                 else if (line.startsWith('DTSTART')) currentEvent.startRaw = parseICSDate(line.substring(line.indexOf(':') + 1));
                 else if (line.startsWith('DTEND')) currentEvent.endRaw = parseICSDate(line.substring(line.indexOf(':') + 1));
@@ -383,118 +369,126 @@
     function extractDetails(text, fallbackLocation) {
         let result = { status: 'Onbekend', personen: 'Onbekend', terrains: [], phone: null };
         if (!text) {
-            if (fallbackLocation) result.terrains.push('📍 ' + fallbackLocation.replace(/^[\s-]+/, '').trim());
+            if (fallbackLocation) result.terrains.push(fallbackLocation.replace(/^[\s-]+/, '').trim());
             return result;
         }
-
         let mStatus = text.match(/Status:\s*([^\n]+)/i);
         if (mStatus) result.status = mStatus[1].trim();
-
         let mPers = text.match(/Aantal personen:\s*([^\n]+)/i);
         if (mPers) result.personen = mPers[1].trim();
 
         let bMatch = text.match(/Toegewezen gebouwen:\s*([\s\S]*?)(?=\n\n|\nToegewezen|\nKampstaf:|$)/i);
-        if (bMatch && bMatch[1]) {
-            bMatch[1].split('\n').forEach(l => {
-                let clean = l.replace(/^[\s-]+/, '').trim();
-                if(clean) result.terrains.push('🏠 ' + clean);
-            });
-        }
+        if (bMatch && bMatch[1]) bMatch[1].split('\n').forEach(l => { let c = l.replace(/^[\s-]+/, '').trim(); if(c) result.terrains.push('🏠 ' + c); });
         
         let vMatch = text.match(/Toegewezen velden:\s*([\s\S]*?)(?=\n\n|\nToegewezen|\nKampstaf:|$)/i);
-        if (vMatch && vMatch[1]) {
-            vMatch[1].split('\n').forEach(l => {
-                let clean = l.replace(/^[\s-]+/, '').trim();
-                if(clean) result.terrains.push('🏕️ ' + clean);
-            });
-        }
+        if (vMatch && vMatch[1]) vMatch[1].split('\n').forEach(l => { let c = l.replace(/^[\s-]+/, '').trim(); if(c) result.terrains.push('🏕️ ' + c); });
 
-        if (result.terrains.length === 0 && fallbackLocation) {
-            result.terrains.push('📍 ' + fallbackLocation.replace(/^[\s-]+/, '').trim());
-        }
+        if (result.terrains.length === 0 && fallbackLocation) result.terrains.push('📍 ' + fallbackLocation.replace(/^[\s-]+/, '').trim());
         
         const regexPhone = /(?:\+[\d]{1,3}|00[\d]{1,3}|0)[\s\-\(\)]*[1-9](?:[\s\-\(\)]*\d){7,11}/;
         const phoneMatch = text.match(regexPhone);
         if (phoneMatch) {
             let displayNum = phoneMatch[0].trim();
-            let clean = displayNum.replace(/[\s\-\(\)]/g, ''); 
-            if (clean.match(/^\+310/)) clean = clean.replace(/^\+310/, '+31');
-            if (clean.startsWith('00')) clean = '+' + clean.substring(2);
-            else if (clean.startsWith('0')) clean = '+31' + clean.substring(1);
-            result.phone = { display: displayNum, link: clean.replace(/^\+310/, '+31') };
+            let clean = displayNum.replace(/[\s\-\(\)]/g, '').replace(/^0/, '+31');
+            result.phone = { display: displayNum, link: clean };
         }
         return result;
     }
 
-    function changeDate(daysOffset) {
-        currentDate.setDate(currentDate.getDate() + daysOffset);
-        renderView();
-    }
+    function changeDate(daysOffset) { currentDate.setDate(currentDate.getDate() + daysOffset); renderView(); }
+    function goToToday() { currentDate = new Date(); currentDate.setHours(0,0,0,0); renderView(); }
 
-    function goToToday() {
-        currentDate = new Date();
-        currentDate.setHours(0,0,0,0);
-        renderView();
+    function toggleCard(element) {
+        element.classList.toggle('expanded');
     }
 
     function renderView() {
-        let endOfDay = new Date(currentDate);
-        endOfDay.setHours(23, 59, 59, 999);
+        let endOfDay = new Date(currentDate); endOfDay.setHours(23, 59, 59, 999);
+        document.getElementById('dateDisplay').innerHTML = `<div>${formatRelativeDate(currentDate, false, true)} <span style="font-size: 0.8em; opacity: 0.8;">📅</span></div><div style="font-size:0.7em; font-weight:normal; color:#888;">${currentDate.toLocaleDateString('nl-NL', { weekday: 'long' })}</div>`;
 
-        // 1. Datum Bar Tekenen
-        let dateHeader = formatRelativeDate(currentDate, false, true);
-        let dayOfWeek = currentDate.toLocaleDateString('nl-NL', { weekday: 'long' });
-        
-        let displayHtml = `<div style="display: flex; align-items: center; justify-content: center; gap: 8px;">
-                              <span>${dateHeader}</span>
-                              <span style="font-size: 0.85em; opacity: 0.8;">📅</span>
-                           </div>
-                           <div style="font-size:0.7em; font-weight:normal; color:#888; margin-top: 2px;">${dayOfWeek}</div>`;
-        
-        document.getElementById('dateDisplay').innerHTML = displayHtml;
-
-        // 2. Staf Bar Tekenen
         let todaysStaff = allStaff.filter(e => e.start <= endOfDay && e.end >= currentDate);
         let staffNames = [...new Set(todaysStaff.map(s => s.summary))].join(', ');
+        document.getElementById('staffDisplay').innerHTML = staffNames ? `🧑‍🌾 Staf: <strong>${staffNames}</strong>` : `⚠️ <strong>Geen staf ingedeeld</strong>`;
+
+        let dailyRes = allReservations.filter(e => e.start <= endOfDay && e.end >= currentDate);
         
-        if (staffNames) {
-            document.getElementById('staffDisplay').innerHTML = `🧑‍🌾 Staf: <strong>${staffNames}</strong>`;
-        } else {
-            document.getElementById('staffDisplay').innerHTML = `⚠️ <strong>Geen staf ingedeeld</strong>`;
-        }
-
-        // 3. Reserveringen Tekenen
-        let dailyRes = allReservations.filter(e => {
-            return e.start <= endOfDay && e.end >= currentDate;
-        });
-
-        dailyRes.sort((a, b) => a.terrainText.localeCompare(b.terrainText));
+        // Sorteer op tijdstip van aankomst
+        dailyRes.sort((a, b) => a.start - b.start);
 
         let html = '';
         if (dailyRes.length === 0) {
-            html = `<div class="empty-state">
-                        🍃 Geen groepen op het terrein.<br>Heerlijk rustig!
-                    </div>`;
+            html = `<div class="empty-state">🍃 Geen groepen op het terrein.<br>Heerlijk rustig!</div>`;
         } else {
+            let realNow = new Date(); // De exacte tijd van dit moment (voor de Rood/Groen berekening)
+
             dailyRes.forEach(res => {
-                let arrivalStr = formatRelativeDate(res.start, res.startRaw && res.startRaw.hasTime, false);
-                let departStr = formatRelativeDate(res.end, res.endRaw && res.endRaw.hasTime, false);
+                let stClass = "state-default";
+                let stLabel = "Gepland";
                 
-                html += `<div class="res-card">
-                            <h3>${res.terrainText}</h3>
-                            <div class="res-detail"><strong>Groep:</strong> <span>${res.summary}</span></div>
-                            <div class="res-detail"><strong>Personen:</strong> <span>${res.personen}</span></div>
-                            <div class="res-detail"><strong>Status:</strong> <span>${res.status}</span></div>
-                            <hr style="border:0; border-top:1px dashed #eee; margin:10px 0;">
-                            <div class="res-detail"><strong>Aankomst:</strong> <span>${arrivalStr}</span></div>
-                            <div class="res-detail"><strong>Vertrek:</strong> <span>${departStr}</span></div>`;
+                let isCheckedIn = res.status.toLowerCase().includes('ingecheckt') || res.status.toLowerCase().includes('aanwezig');
+                let isCheckedOut = res.status.toLowerCase().includes('uitgecheckt') || res.status.toLowerCase().includes('afgerond') || res.status.toLowerCase().includes('geannuleerd');
+                let arrivingRealToday = res.start.getDate() === realNow.getDate() && res.start.getMonth() === realNow.getMonth() && res.start.getFullYear() === realNow.getFullYear();
+
+                // 🧠 De slimme logica voor de kleuren:
+                if (isCheckedOut) {
+                    stClass = "state-default";
+                    stLabel = "Vertrokken / Klaar";
+                } else if (isCheckedIn) {
+                    if (res.end < realNow) {
+                        stClass = "state-red";
+                        stLabel = "Te laat met uitcheck";
+                    } else {
+                        stClass = "state-green";
+                        stLabel = "Ingecheckt";
+                    }
+                } else {
+                    if (res.start < realNow) {
+                        stClass = "state-red";
+                        stLabel = "Te laat voor incheck";
+                    } else if (arrivingRealToday) {
+                        stClass = "state-orange";
+                        stLabel = "Komt Vandaag";
+                    } else {
+                        stClass = "state-default";
+                        stLabel = "Gepland";
+                    }
+                }
+
+                // Maak groepsnaam schoon (nummer tussen haakjes weg)
+                let cleanSummary = res.summary.replace(/\s*\([^)]*\)$/, '').trim();
+
+                let arrivalStr = formatRelativeDate(res.start, res.startRaw.hasTime, false);
+                let departStr = formatRelativeDate(res.end, res.endRaw ? res.endRaw.hasTime : false, false);
+
+                html += `<div class="res-card ${stClass}" onclick="toggleCard(this)">
+                            
+                            <div class="card-header">
+                                <div class="card-header-info">
+                                    <span class="status-pill">${stLabel}</span>
+                                    <h3>${res.terrainText}</h3>
+                                    <p>${cleanSummary}</p>
+                                </div>
+                                <svg class="chevron" viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="6 9 12 15 18 9"></polyline>
+                                </svg>
+                            </div>
+
+                            <div class="card-body">
+                                <hr style="border:0; border-top:1px solid #eee; margin:0 0 12px 0;">
+                                <div class="res-detail"><strong>Status Label:</strong> <span>${res.status}</span></div>
+                                <div class="res-detail"><strong>Personen:</strong> <span>${res.personen}</span></div>
+                                <div class="res-detail"><strong>Aankomst:</strong> <span>${arrivalStr}</span></div>
+                                <div class="res-detail"><strong>Vertrek:</strong> <span>${departStr}</span></div>`;
                 
                 if (res.phone) {
-                    html += `<a href="tel:${res.phone.link}" class="btn-call">📞 Bel ${res.phone.display}</a>`;
+                    // event.stopPropagation() is super belangrijk! Dit voorkomt dat de kaart inklapt als je op "Bel" drukt.
+                    html += `<a href="tel:${res.phone.link}" class="btn-call" onclick="event.stopPropagation()">📞 Bel ${res.phone.display}</a>`;
                 } else {
-                    html += `<div class="no-phone">Geen (geldig) telefoonnummer in systeem.</div>`;
+                    html += `<div class="no-phone">Geen telefoonnummer bekend.</div>`;
                 }
-                html += `</div>`;
+                
+                html += `   </div>
+                        </div>`;
             });
         }
         document.getElementById('contentArea').innerHTML = html;
@@ -504,74 +498,39 @@
     async function refreshReservations() {
         const btn = document.getElementById('refreshBtn');
         if (btn.classList.contains('spinning')) return;
-        
         btn.classList.add('spinning');
-        btn.style.opacity = "0.5";
-        
         localStorage.removeItem('buitenzorg_res_mobile');
-        localStorage.removeItem('buitenzorg_res_mobile_time');
-        
-        try {
-            const resData = await fetchCachedICS(reservationUrl, 'buitenzorg_res_mobile');
-            if (!resData) throw new Error("Netwerk fout");
-            
+        const resData = await fetchCachedICS(reservationUrl, 'buitenzorg_res_mobile');
+        if (resData) {
             allReservations = [];
-            let rEvents = parseICS(resData);
-            rEvents.forEach(e => {
+            parseICS(resData).forEach(e => {
                 let details = extractDetails(e.description, e.location);
-                e.terrainText = details.terrains.length > 0 ? details.terrains.join('<br>') : '📍 Onbekend Terrein / Gebouw';
-                e.phone = details.phone;
-                e.status = details.status;
-                e.personen = details.personen;
+                let tText = details.terrains.length > 0 ? details.terrains.join('<br>') : '📍 Onbekend';
+                e.terrainText = tText.replace("Pauls", "Paul's");
+                e.phone = details.phone; e.status = details.status; e.personen = details.personen;
                 allReservations.push(e);
             });
-            
             renderView();
-        } catch (e) {
-            console.warn("Kon reserveringen niet vernieuwen:", e);
-        } finally {
-            setTimeout(() => {
-                btn.classList.remove('spinning');
-                btn.style.opacity = "1";
-            }, 2000);
         }
+        setTimeout(() => btn.classList.remove('spinning'), 1500);
     }
 
-    Promise.all([
-        fetchCachedICS(reservationUrl, 'buitenzorg_res_mobile'),
-        fetchCachedICS(planningUrl, 'buitenzorg_plan_mobile')
-    ]).then(([resData, planData]) => {
-        if (!resData || !planData) throw new Error("Netwerk fout");
-        
-        let rEvents = parseICS(resData);
-        rEvents.forEach(e => {
+    Promise.all([fetchCachedICS(reservationUrl, 'buitenzorg_res_mobile'), fetchCachedICS(planningUrl, 'buitenzorg_plan_mobile')]).then(([resData, planData]) => {
+        if (resData) parseICS(resData).forEach(e => {
             let details = extractDetails(e.description, e.location);
-            e.terrainText = details.terrains.length > 0 ? details.terrains.join('<br>') : '📍 Onbekend Terrein / Gebouw';
-            e.phone = details.phone;
-            e.status = details.status;
-            e.personen = details.personen;
+            let tText = details.terrains.length > 0 ? details.terrains.join('<br>') : '📍 Onbekend';
+            e.terrainText = tText.replace("Pauls", "Paul's");
+            e.phone = details.phone; e.status = details.status; e.personen = details.personen;
             allReservations.push(e);
         });
-
-        let pEvents = parseICS(planData);
-        pEvents.forEach(e => {
+        if (planData) parseICS(planData).forEach(e => {
             let s = e.summary ? e.summary.toLowerCase() : '';
-            let d = e.description ? e.description.toLowerCase() : '';
-            if (s.includes('klusteam') || d.includes('klusteam') || s.includes('evenement') || s.includes('vakantie')) return; 
-            
-            let names = e.summary ? e.summary.split(',') : ['Onbekend'];
-            names.forEach(name => {
-                let cleanName = name.trim();
-                if (cleanName) allStaff.push({ ...e, summary: cleanName });
-            });
+            if (!['klusteam','evenement','vakantie'].some(x => s.includes(x))) {
+                e.summary.split(',').forEach(name => { if(name.trim()) allStaff.push({...e, summary: name.trim()}); });
+            }
         });
-
         renderView(); 
-    }).catch(e => {
-        document.getElementById('contentArea').innerHTML = `<div class="empty-state" style="border-left-color:red;">Fout bij laden. Controleer je internetverbinding.</div>`;
     });
-
 </script>
-
 </body>
 </html>
