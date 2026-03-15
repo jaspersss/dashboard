@@ -409,7 +409,6 @@
         
         let realNow = new Date(); 
 
-        // Bepaal de status, kleuren, tijden en actie-tijd voor de sortering
         dailyRes.forEach(res => {
             let st = res.status ? res.status.toLowerCase() : "";
             let isCheckedIn = st.includes('ingecheckt') || st.includes('aanwezig');
@@ -418,10 +417,14 @@
             let arrivingRealToday = res.start.getDate() === realNow.getDate() && res.start.getMonth() === realNow.getMonth() && res.start.getFullYear() === realNow.getFullYear();
             let departingRealToday = res.end.getDate() === realNow.getDate() && res.end.getMonth() === realNow.getMonth() && res.end.getFullYear() === realNow.getFullYear();
 
+            // Wordt deze reservering op de HUIDIGE geselecteerde datum (currentDate) verwacht of verlaten ze het terrein?
+            let isArrivingViewedDay = res.start.getDate() === currentDate.getDate() && res.start.getMonth() === currentDate.getMonth() && res.start.getFullYear() === currentDate.getFullYear();
+            let isDepartingViewedDay = res.end.getDate() === currentDate.getDate() && res.end.getMonth() === currentDate.getMonth() && res.end.getFullYear() === currentDate.getFullYear();
+
             let timeStartStr = res.start.toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' });
             let timeEndStr = res.end.toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' });
 
-            let actionTime = res.start; // Standaard sorteren we op incheck tijd
+            let actionTime = res.start; 
 
             if (isCheckedOut) {
                 res.sortWeight = 5;
@@ -429,45 +432,57 @@
                 res.stLabel = "Vertrokken / Klaar";
                 actionTime = res.end;
             } else if (isCheckedIn) {
-                actionTime = res.end; // Voor ingecheckte groepen is de UITcheck de relevante actietijd
+                actionTime = res.end; 
                 if (res.end < realNow) {
                     res.sortWeight = 1; 
                     res.stClass = "state-red";
-                    res.stLabel = `Te laat voor uitcheck (${timeEndStr})`;
-                } else if (departingRealToday) {
+                    res.stLabel = "Te laat voor uitcheck" + (isDepartingViewedDay ? ` (${timeEndStr})` : "");
+                } else if (departingRealToday && isDepartingViewedDay) {
                     res.sortWeight = 2; 
                     res.stClass = "state-orange";
                     res.stLabel = `Vertrekt Vandaag (${timeEndStr})`;
                 } else {
                     res.sortWeight = 3; 
                     res.stClass = "state-green";
-                    res.stLabel = "Ingecheckt";
+                    res.stLabel = "Ingecheckt" + (isDepartingViewedDay ? ` tot ${timeEndStr}` : "");
                 }
             } else {
-                actionTime = res.start; // Voor nieuwe groepen is de INcheck de actietijd
+                // Nog NIET ingecheckt
+                actionTime = res.start; 
                 if (res.start < realNow) {
                     res.sortWeight = 1; 
                     res.stClass = "state-red";
-                    res.stLabel = `Te laat voor incheck (${timeStartStr})`;
-                } else if (arrivingRealToday) {
+                    res.stLabel = "Te laat voor incheck" + (isArrivingViewedDay ? ` (${timeStartStr})` : "");
+                } else if (arrivingRealToday && isArrivingViewedDay) {
                     res.sortWeight = 2; 
                     res.stClass = "state-orange"; 
                     res.stLabel = `Komt Vandaag (${timeStartStr})`;
                 } else {
                     res.sortWeight = 4; 
-                    res.stClass = "state-default";
-                    res.stLabel = `Gepland (${timeStartStr})`;
+                    res.stClass = "state-default"; // Grijs
+                    if (isArrivingViewedDay) {
+                        res.stLabel = `Gepland (${timeStartStr})`;
+                    } else if (isDepartingViewedDay) {
+                        res.stLabel = `Gepland Vertrek (${timeEndStr})`;
+                        actionTime = res.end; // Zodat ze op de vertrekdag mooi op tijd geordend staan
+                    } else {
+                        res.stLabel = `Gepland (Tussendag)`; // Tussendag, dus geen tijd tonen
+                    }
                 }
             }
             res.actionTime = actionTime;
         });
 
-        // Nu sorteren we op de actietijd (Chronologisch binnen de kleuren Oranje en Rood!)
+        // 🧠 Sortering: 1. Kleur/Prioriteit -> 2. Tijd (Chronologisch) -> 3. Alfabet
         dailyRes.sort((a, b) => {
             if (a.sortWeight !== b.sortWeight) {
                 return a.sortWeight - b.sortWeight;
             }
-            return a.actionTime - b.actionTime;
+            let timeDiff = a.actionTime.getTime() - b.actionTime.getTime();
+            if (timeDiff !== 0) {
+                return timeDiff;
+            }
+            return a.terrainText.localeCompare(b.terrainText);
         });
 
         let html = '';
