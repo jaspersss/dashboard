@@ -66,7 +66,7 @@
 
         .content { padding: 0 15px; max-width: 600px; margin: 0 auto; }
 
-        /* --- Nieuwe Accordeon Kaarten --- */
+        /* --- Accordeon Kaarten --- */
         .res-card {
             background: white; border-radius: 12px; margin-bottom: 15px;
             box-shadow: 0 2px 8px rgba(0,0,0,0.08); 
@@ -101,12 +101,12 @@
         .state-red .card-header { background-color: #fdf2f1; }
         .state-red .status-pill { background-color: #e74c3c; color: white; }
 
-        /* 🟩 GROEN (Ingecheckt) */
+        /* 🟩 GROEN (Ingecheckt en blijft nog) */
         .state-green { border-left: 6px solid #2ecc71; }
         .state-green .card-header { background-color: #f2fcf5; }
         .state-green .status-pill { background-color: #2ecc71; color: white; }
 
-        /* 🟧 ORANJE (Komt vandaag) */
+        /* 🟧 ORANJE (Komt vandaag OF Vertrekt vandaag) */
         .state-orange { border-left: 6px solid #f39c12; }
         .state-orange .card-header { background-color: #fef9f1; }
         .state-orange .status-pill { background-color: #f39c12; color: white; }
@@ -116,7 +116,7 @@
         .state-default .card-header { background-color: #fdfdfd; }
         .state-default .status-pill { background-color: #bdc3c7; color: white; }
 
-        /* --- Details in het uitklapmenu --- */
+        /* --- Details --- */
         .res-detail { margin: 8px 0; font-size: 0.95em; display: flex; justify-content: space-between; }
         .res-detail strong { color: #666; min-width: 100px; }
         .res-detail span { text-align: right; font-weight: 500; }
@@ -412,14 +412,14 @@
 
         let dailyRes = allReservations.filter(e => e.start <= endOfDay && e.end >= currentDate);
         
-        // Sorteer op tijdstip van aankomst
+        // Sorteer op aankomsttijd
         dailyRes.sort((a, b) => a.start - b.start);
 
         let html = '';
         if (dailyRes.length === 0) {
             html = `<div class="empty-state">🍃 Geen groepen op het terrein.<br>Heerlijk rustig!</div>`;
         } else {
-            let realNow = new Date(); // De exacte tijd van dit moment (voor de Rood/Groen berekening)
+            let realNow = new Date(); 
 
             dailyRes.forEach(res => {
                 let stClass = "state-default";
@@ -427,16 +427,22 @@
                 
                 let isCheckedIn = res.status.toLowerCase().includes('ingecheckt') || res.status.toLowerCase().includes('aanwezig');
                 let isCheckedOut = res.status.toLowerCase().includes('uitgecheckt') || res.status.toLowerCase().includes('afgerond') || res.status.toLowerCase().includes('geannuleerd');
+                
+                // Komen ze vandaag aan of vertrekken ze vandaag?
                 let arrivingRealToday = res.start.getDate() === realNow.getDate() && res.start.getMonth() === realNow.getMonth() && res.start.getFullYear() === realNow.getFullYear();
+                let departingRealToday = res.end.getDate() === realNow.getDate() && res.end.getMonth() === realNow.getMonth() && res.end.getFullYear() === realNow.getFullYear();
 
-                // 🧠 De slimme logica voor de kleuren:
+                // 🧠 De To-Do logica voor de kleuren:
                 if (isCheckedOut) {
                     stClass = "state-default";
                     stLabel = "Vertrokken / Klaar";
                 } else if (isCheckedIn) {
                     if (res.end < realNow) {
                         stClass = "state-red";
-                        stLabel = "Te laat met uitcheck";
+                        stLabel = "Te laat voor uitcheck";
+                    } else if (departingRealToday) {
+                        stClass = "state-orange"; // Actiepunt voor vandaag: Groep checkt uit!
+                        stLabel = "Vertrekt Vandaag";
                     } else {
                         stClass = "state-green";
                         stLabel = "Ingecheckt";
@@ -446,7 +452,7 @@
                         stClass = "state-red";
                         stLabel = "Te laat voor incheck";
                     } else if (arrivingRealToday) {
-                        stClass = "state-orange";
+                        stClass = "state-orange"; // Actiepunt voor vandaag: Groep komt aan!
                         stLabel = "Komt Vandaag";
                     } else {
                         stClass = "state-default";
@@ -454,9 +460,7 @@
                     }
                 }
 
-                // Maak groepsnaam schoon (nummer tussen haakjes weg)
                 let cleanSummary = res.summary.replace(/\s*\([^)]*\)$/, '').trim();
-
                 let arrivalStr = formatRelativeDate(res.start, res.startRaw.hasTime, false);
                 let departStr = formatRelativeDate(res.end, res.endRaw ? res.endRaw.hasTime : false, false);
 
@@ -481,7 +485,6 @@
                                 <div class="res-detail"><strong>Vertrek:</strong> <span>${departStr}</span></div>`;
                 
                 if (res.phone) {
-                    // event.stopPropagation() is super belangrijk! Dit voorkomt dat de kaart inklapt als je op "Bel" drukt.
                     html += `<a href="tel:${res.phone.link}" class="btn-call" onclick="event.stopPropagation()">📞 Bel ${res.phone.display}</a>`;
                 } else {
                     html += `<div class="no-phone">Geen telefoonnummer bekend.</div>`;
