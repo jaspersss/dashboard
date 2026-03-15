@@ -409,7 +409,7 @@
         
         let realNow = new Date(); 
 
-        // Bepaal de status, kleuren en sorteer-prioriteit VOORDAT we de HTML bouwen
+        // Bepaal de status, kleuren, tijden en actie-tijd voor de sortering
         dailyRes.forEach(res => {
             let st = res.status ? res.status.toLowerCase() : "";
             let isCheckedIn = st.includes('ingecheckt') || st.includes('aanwezig');
@@ -418,22 +418,24 @@
             let arrivingRealToday = res.start.getDate() === realNow.getDate() && res.start.getMonth() === realNow.getMonth() && res.start.getFullYear() === realNow.getFullYear();
             let departingRealToday = res.end.getDate() === realNow.getDate() && res.end.getMonth() === realNow.getMonth() && res.end.getFullYear() === realNow.getFullYear();
 
-            // Haal de tijden op (alleen uren/minuten) voor in de labels
             let timeStartStr = res.start.toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' });
             let timeEndStr = res.end.toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' });
 
-            // Sorteer gewicht: 1 = Rood (Te laat!), 2 = Oranje (To-Do), 3 = Groen, 4 = Grijs, 5 = Wit (Klaar)
+            let actionTime = res.start; // Standaard sorteren we op incheck tijd
+
             if (isCheckedOut) {
                 res.sortWeight = 5;
                 res.stClass = "state-default";
                 res.stLabel = "Vertrokken / Klaar";
+                actionTime = res.end;
             } else if (isCheckedIn) {
+                actionTime = res.end; // Voor ingecheckte groepen is de UITcheck de relevante actietijd
                 if (res.end < realNow) {
-                    res.sortWeight = 1; // ROOD (Hoogste prioriteit)
+                    res.sortWeight = 1; 
                     res.stClass = "state-red";
                     res.stLabel = `Te laat voor uitcheck (${timeEndStr})`;
                 } else if (departingRealToday) {
-                    res.sortWeight = 2; // ORANJE
+                    res.sortWeight = 2; 
                     res.stClass = "state-orange";
                     res.stLabel = `Vertrekt Vandaag (${timeEndStr})`;
                 } else {
@@ -442,28 +444,30 @@
                     res.stLabel = "Ingecheckt";
                 }
             } else {
+                actionTime = res.start; // Voor nieuwe groepen is de INcheck de actietijd
                 if (res.start < realNow) {
-                    res.sortWeight = 1; // ROOD (Hoogste prioriteit)
+                    res.sortWeight = 1; 
                     res.stClass = "state-red";
                     res.stLabel = `Te laat voor incheck (${timeStartStr})`;
                 } else if (arrivingRealToday) {
-                    res.sortWeight = 2; // ORANJE
+                    res.sortWeight = 2; 
                     res.stClass = "state-orange"; 
                     res.stLabel = `Komt Vandaag (${timeStartStr})`;
                 } else {
                     res.sortWeight = 4; 
                     res.stClass = "state-default";
-                    res.stLabel = `Gepland (${timeStartStr})`; // Toegevoegd: de tijd voor grijze groepen!
+                    res.stLabel = `Gepland (${timeStartStr})`;
                 }
             }
+            res.actionTime = actionTime;
         });
 
-        // Nu we het gewicht weten, sorteren we eerst op de prioriteit (1 t/m 5) en daarna op aankomsttijd
+        // Nu sorteren we op de actietijd (Chronologisch binnen de kleuren Oranje en Rood!)
         dailyRes.sort((a, b) => {
             if (a.sortWeight !== b.sortWeight) {
                 return a.sortWeight - b.sortWeight;
             }
-            return a.start - b.start;
+            return a.actionTime - b.actionTime;
         });
 
         let html = '';
