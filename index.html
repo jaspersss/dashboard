@@ -346,7 +346,16 @@
             else if (line.startsWith('END:VEVENT') && currentEvent) {
                 if (currentEvent.startRaw) {
                     currentEvent.start = currentEvent.startRaw.date;
-                    currentEvent.end = currentEvent.endRaw ? currentEvent.endRaw.date : new Date(currentEvent.start);
+                    currentEvent.start.setHours(currentEvent.startRaw.hasTime ? currentEvent.start.getHours() : 0, currentEvent.startRaw.hasTime ? currentEvent.start.getMinutes() : 0, 0, 0); 
+                    if (currentEvent.endRaw) {
+                        if (!currentEvent.endRaw.hasTime) {
+                            currentEvent.end = new Date(currentEvent.endRaw.date.getTime() - 1);
+                            currentEvent.end.setHours(23,59,59,999);
+                        } else currentEvent.end = new Date(currentEvent.endRaw.date.getTime());
+                    } else {
+                        currentEvent.end = new Date(currentEvent.start);
+                        currentEvent.end.setHours(23,59,59,999);
+                    }
                     events.push(currentEvent);
                 }
                 currentEvent = null;
@@ -409,6 +418,7 @@
         
         let realNow = new Date(); 
 
+        // Bepaal de status, kleuren, tijden en actie-tijd voor de sortering
         dailyRes.forEach(res => {
             let st = res.status ? res.status.toLowerCase() : "";
             let isCheckedIn = st.includes('ingecheckt') || st.includes('aanwezig');
@@ -437,14 +447,14 @@
                     res.sortWeight = 1; 
                     res.stClass = "state-red";
                     res.stLabel = "Te laat voor uitcheck" + (isDepartingViewedDay ? ` (${timeEndStr})` : "");
-                } else if (departingRealToday && isDepartingViewedDay) {
-                    res.sortWeight = 2; 
+                } else if (isDepartingViewedDay) {
+                    res.sortWeight = 2; // Ze vertrekken op de dag waar we NU naar kijken! Oranje!
                     res.stClass = "state-orange";
-                    res.stLabel = `Vertrekt Vandaag (${timeEndStr})`;
+                    res.stLabel = departingRealToday ? `Vertrekt Vandaag (${timeEndStr})` : `Vertrekt (${timeEndStr})`;
                 } else {
                     res.sortWeight = 3; 
                     res.stClass = "state-green";
-                    res.stLabel = "Ingecheckt" + (isDepartingViewedDay ? ` tot ${timeEndStr}` : "");
+                    res.stLabel = "Ingecheckt";
                 }
             } else {
                 // Nog NIET ingecheckt
@@ -461,9 +471,9 @@
                     res.sortWeight = 4; 
                     res.stClass = "state-default"; // Grijs
                     if (isArrivingViewedDay) {
-                        res.stLabel = `Gepland Aankomst(${timeStartStr})`;
+                        res.stLabel = `Gepland aankomst (${timeStartStr})`;
                     } else if (isDepartingViewedDay) {
-                        res.stLabel = `Gepland Vertrek (${timeEndStr})`;
+                        res.stLabel = `Gepland vertrek (${timeEndStr})`;
                         actionTime = res.end; // Zodat ze op de vertrekdag mooi op tijd geordend staan
                     } else {
                         res.stLabel = `Gepland (Tussendag)`; // Tussendag, dus geen tijd tonen
