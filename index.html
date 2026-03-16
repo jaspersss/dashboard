@@ -19,6 +19,7 @@
             --wood-brown: #8b5a2b;
             --bg-color: #f4f7f6;
             --text-main: #333;
+            --wa-green: #25D366;
         }
 
         * { box-sizing: border-box; }
@@ -116,12 +117,23 @@
         .res-detail strong { color: #666; min-width: 100px; }
         .res-detail span { text-align: right; font-weight: 500; }
 
-        .btn-call {
-            margin-top: 15px; background-color: #27ae60; color: white; text-decoration: none;
-            padding: 12px; border-radius: 8px; text-align: center; font-weight: bold;
-            display: block; font-size: 1.1em; box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+        /* --- Nieuwe Knoppen Layout --- */
+        .action-buttons {
+            display: flex; gap: 10px; margin-top: 15px;
         }
+
+        .btn-call, .btn-wa {
+            flex: 1; text-decoration: none; padding: 12px; border-radius: 8px;
+            text-align: center; font-weight: bold; color: white; font-size: 1.05em;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.15); display: flex; align-items: center; justify-content: center; gap: 6px;
+        }
+
+        .btn-call { background-color: #27ae60; }
         .btn-call:active { background-color: #1e8449; }
+
+        .btn-wa { background-color: var(--wa-green); }
+        .btn-wa:active { background-color: #1ebe53; }
+
         .no-phone { margin-top: 15px; color: #999; font-style: italic; text-align: center; font-size: 0.9em; padding: 12px; background: #f9f9f9; border-radius: 8px; }
 
         .bottom-nav {
@@ -418,7 +430,6 @@
         
         let realNow = new Date(); 
 
-        // Bepaal de status, kleuren, tijden en actie-tijd voor de sortering
         dailyRes.forEach(res => {
             let st = res.status ? res.status.toLowerCase() : "";
             let isCheckedIn = st.includes('ingecheckt') || st.includes('aanwezig');
@@ -427,7 +438,6 @@
             let arrivingRealToday = res.start.getDate() === realNow.getDate() && res.start.getMonth() === realNow.getMonth() && res.start.getFullYear() === realNow.getFullYear();
             let departingRealToday = res.end.getDate() === realNow.getDate() && res.end.getMonth() === realNow.getMonth() && res.end.getFullYear() === realNow.getFullYear();
 
-            // Wordt deze reservering op de HUIDIGE geselecteerde datum (currentDate) verwacht of verlaten ze het terrein?
             let isArrivingViewedDay = res.start.getDate() === currentDate.getDate() && res.start.getMonth() === currentDate.getMonth() && res.start.getFullYear() === currentDate.getFullYear();
             let isDepartingViewedDay = res.end.getDate() === currentDate.getDate() && res.end.getMonth() === currentDate.getMonth() && res.end.getFullYear() === currentDate.getFullYear();
 
@@ -448,7 +458,7 @@
                     res.stClass = "state-red";
                     res.stLabel = "Te laat voor uitcheck" + (isDepartingViewedDay ? ` (${timeEndStr})` : "");
                 } else if (isDepartingViewedDay) {
-                    res.sortWeight = 2; // Ze vertrekken op de dag waar we NU naar kijken! Oranje!
+                    res.sortWeight = 2; 
                     res.stClass = "state-orange";
                     res.stLabel = departingRealToday ? `Vertrekt Vandaag (${timeEndStr})` : `Vertrekt (${timeEndStr})`;
                 } else {
@@ -457,7 +467,6 @@
                     res.stLabel = "Ingecheckt";
                 }
             } else {
-                // Nog NIET ingecheckt
                 actionTime = res.start; 
                 if (res.start < realNow) {
                     res.sortWeight = 1; 
@@ -469,21 +478,20 @@
                     res.stLabel = `Komt Vandaag (${timeStartStr})`;
                 } else {
                     res.sortWeight = 4; 
-                    res.stClass = "state-default"; // Grijs
+                    res.stClass = "state-default"; 
                     if (isArrivingViewedDay) {
                         res.stLabel = `Gepland aankomst (${timeStartStr})`;
                     } else if (isDepartingViewedDay) {
                         res.stLabel = `Gepland vertrek (${timeEndStr})`;
-                        actionTime = res.end; // Zodat ze op de vertrekdag mooi op tijd geordend staan
+                        actionTime = res.end; 
                     } else {
-                        res.stLabel = `Gepland`; // Tussendag, dus geen tijd tonen
+                        res.stLabel = `Gepland`; 
                     }
                 }
             }
             res.actionTime = actionTime;
         });
 
-        // 🧠 Sortering: 1. Kleur/Prioriteit -> 2. Tijd (Chronologisch) -> 3. Alfabet
         dailyRes.sort((a, b) => {
             if (a.sortWeight !== b.sortWeight) {
                 return a.sortWeight - b.sortWeight;
@@ -525,7 +533,11 @@
                                 <div class="res-detail"><strong>Vertrek:</strong> <span>${departStr}</span></div>`;
                 
                 if (res.phone) {
-                    html += `<a href="tel:${res.phone.link}" class="btn-call" onclick="event.stopPropagation()">📞 Bel ${res.phone.display}</a>`;
+                    // Twee knoppen (Bellen & WhatsApp) netjes naast elkaar in een flex container
+                    html += `<div class="action-buttons">
+                                <a href="tel:${res.phone.link}" class="btn-call" onclick="event.stopPropagation()">📞 ${res.phone.display}</a>
+                                <a href="https://wa.me/${res.phone.link.replace('+', '')}" target="_blank" class="btn-wa" onclick="event.stopPropagation()">💬 Appen</a>
+                             </div>`;
                 } else {
                     html += `<div class="no-phone">Geen telefoonnummer bekend.</div>`;
                 }
