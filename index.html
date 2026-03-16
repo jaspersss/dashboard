@@ -358,16 +358,7 @@
             else if (line.startsWith('END:VEVENT') && currentEvent) {
                 if (currentEvent.startRaw) {
                     currentEvent.start = currentEvent.startRaw.date;
-                    currentEvent.start.setHours(currentEvent.startRaw.hasTime ? currentEvent.start.getHours() : 0, currentEvent.startRaw.hasTime ? currentEvent.start.getMinutes() : 0, 0, 0); 
-                    if (currentEvent.endRaw) {
-                        if (!currentEvent.endRaw.hasTime) {
-                            currentEvent.end = new Date(currentEvent.endRaw.date.getTime() - 1);
-                            currentEvent.end.setHours(23,59,59,999);
-                        } else currentEvent.end = new Date(currentEvent.endRaw.date.getTime());
-                    } else {
-                        currentEvent.end = new Date(currentEvent.start);
-                        currentEvent.end.setHours(23,59,59,999);
-                    }
+                    currentEvent.end = currentEvent.endRaw ? currentEvent.endRaw.date : new Date(currentEvent.start);
                     events.push(currentEvent);
                 }
                 currentEvent = null;
@@ -430,6 +421,7 @@
         
         let realNow = new Date(); 
 
+        // Bepaal de status, kleuren, tijden en actie-tijd voor de sortering
         dailyRes.forEach(res => {
             let st = res.status ? res.status.toLowerCase() : "";
             let isCheckedIn = st.includes('ingecheckt') || st.includes('aanwezig');
@@ -438,6 +430,7 @@
             let arrivingRealToday = res.start.getDate() === realNow.getDate() && res.start.getMonth() === realNow.getMonth() && res.start.getFullYear() === realNow.getFullYear();
             let departingRealToday = res.end.getDate() === realNow.getDate() && res.end.getMonth() === realNow.getMonth() && res.end.getFullYear() === realNow.getFullYear();
 
+            // Wordt deze reservering op de HUIDIGE geselecteerde datum (currentDate) verwacht of verlaten ze het terrein?
             let isArrivingViewedDay = res.start.getDate() === currentDate.getDate() && res.start.getMonth() === currentDate.getMonth() && res.start.getFullYear() === currentDate.getFullYear();
             let isDepartingViewedDay = res.end.getDate() === currentDate.getDate() && res.end.getMonth() === currentDate.getMonth() && res.end.getFullYear() === currentDate.getFullYear();
 
@@ -458,7 +451,7 @@
                     res.stClass = "state-red";
                     res.stLabel = "Te laat voor uitcheck" + (isDepartingViewedDay ? ` (${timeEndStr})` : "");
                 } else if (isDepartingViewedDay) {
-                    res.sortWeight = 2; 
+                    res.sortWeight = 2; // Ze vertrekken op de dag waar we NU naar kijken! Oranje!
                     res.stClass = "state-orange";
                     res.stLabel = departingRealToday ? `Vertrekt Vandaag (${timeEndStr})` : `Vertrekt (${timeEndStr})`;
                 } else {
@@ -467,6 +460,7 @@
                     res.stLabel = "Ingecheckt";
                 }
             } else {
+                // Nog NIET ingecheckt
                 actionTime = res.start; 
                 if (res.start < realNow) {
                     res.sortWeight = 1; 
@@ -478,20 +472,21 @@
                     res.stLabel = `Komt Vandaag (${timeStartStr})`;
                 } else {
                     res.sortWeight = 4; 
-                    res.stClass = "state-default"; 
+                    res.stClass = "state-default"; // Grijs
                     if (isArrivingViewedDay) {
                         res.stLabel = `Gepland aankomst (${timeStartStr})`;
                     } else if (isDepartingViewedDay) {
                         res.stLabel = `Gepland vertrek (${timeEndStr})`;
-                        actionTime = res.end; 
+                        actionTime = res.end; // Zodat ze op de vertrekdag mooi op tijd geordend staan
                     } else {
-                        res.stLabel = `Gepland`; 
+                        res.stLabel = `Gepland`; // Tussendag, dus geen tijd tonen
                     }
                 }
             }
             res.actionTime = actionTime;
         });
 
+        // 🧠 Sortering: 1. Kleur/Prioriteit -> 2. Tijd (Chronologisch) -> 3. Alfabet
         dailyRes.sort((a, b) => {
             if (a.sortWeight !== b.sortWeight) {
                 return a.sortWeight - b.sortWeight;
@@ -533,9 +528,8 @@
                                 <div class="res-detail"><strong>Vertrek:</strong> <span>${departStr}</span></div>`;
                 
                 if (res.phone) {
-                    // Twee knoppen (Bellen & WhatsApp) netjes naast elkaar in een flex container
                     html += `<div class="action-buttons">
-                                <a href="tel:${res.phone.link}" class="btn-call" onclick="event.stopPropagation()">📞 ${res.phone.display}</a>
+                                <a href="tel:${res.phone.link}" class="btn-call" onclick="event.stopPropagation()">📞 Bellen</a>
                                 <a href="https://wa.me/${res.phone.link.replace('+', '')}" target="_blank" class="btn-wa" onclick="event.stopPropagation()">💬 Appen</a>
                              </div>`;
                 } else {
